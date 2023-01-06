@@ -1,2 +1,4 @@
 # Local Python Environment
 dione
+logs/**
+__pycache__
