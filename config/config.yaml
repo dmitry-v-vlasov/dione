@@ -1,0 +1,73 @@
+research:
+  name: Tesla Stock Price Time Series Prediction
+  description: Based on the historical data of the Tesla stock prices and
+    on other historical data of some quoted instruments (aka exogeneous variables).
+  machine-learning:
+    time-range:
+      begin-time: 2021-01-01
+      end-time: 2022-12-31
+    split-time: 2022-12-20
+    cross-validation-strategy: sliding-window
+  target-quoted-instrument:
+    ticker: TSLA
+    name: Tesla, Inc.
+    description: Tesla, Inc. engages in the design, development, manufacture, and
+      sale of fully electric vehicles and energy generation and storage systems.
+    data-loading:
+      data-loading-stategy: keep_local-save_remote
+      remote-data-loading:
+        source-name: Yahoo! Finance
+        time-range:
+          begin-time: 2018-01-01
+          end-time: 2022-12-31
+      local-data-loading:
+        file-name: None
+    data-transformation:
+      clearing:
+        - fill-by-previous-timestamp
+      treatment:
+        - None
+      scaling:
+        - standardization
+  quoted-instrument:
+    - ticker: ^NDX
+      name: NASDAQ-100
+      description: The index of today's modern-day industrials—comprised of 100 of the largest and
+        most innovative non-financial companies listed on the Nasdaq Stock Market based on
+        market capitalization.
+      data-loading:
+        data-loading-stategy: keep_old_local-save_remote_replace
+        remote-data-loading:
+          source-name: Yahoo! Finance
+          begin-timestamp: 2018-01-01
+          end-timestamp: 2022-12-31
+        local-data-loading:
+          file-name: None
+      data-transformation:
+        clearing:
+          - fill-by-previous-timestamp
+        treatment:
+          - dimentionality-reduction-OHLC
+        scaling:
+          - standardization
+    - ticker: REMX
+      name: VanEck Rare Earth/Strategic Metals ETF
+      description: VanEck Rare Earth/Strategic Metals ETF (REMX®) seeks to replicate as closely as possible,
+        before fees and expenses, the price and yield performance of the MVIS®Global Rare Earth/Strategic
+        Metals Index (MVREMXTR), which is intended to track the overall performance of companies involved in
+        producing, refining, and recycling of rare earth and strategic metals and minerals.
+      data-loading:
+        data-loading-stategy: keep_old_local-save_remote_replace
+        remote-data-loading:
+          source-name: Yahoo! Finance
+          begin-timestamp: 2018-01-01
+          end-timestamp: 2022-12-31
+        local-data-loading:
+          file-name: None
+      data-transformation:
+        clearing:
+          - fill-by-previous-timestamp
+        treatment:
+          - dimentionality-reduction-OHLC
+        scaling:
+          - standardization
