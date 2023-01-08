@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 
-from typing import Type
-from typing import List
+import typing
 
 from datetime import datetime
 
@@ -29,9 +28,10 @@ class DataLoading(BaseModel):
 
 
 class DataTransformation(BaseModel):
-    clearing: List[str]
-    treatment: List[str]
-    scaling: List[str]
+    tending: typing.OrderedDict
+    clearing: typing.OrderedDict
+    treatment: typing.OrderedDict
+    scaling: typing.OrderedDict
 
 
 class QuotedInstrument(BaseModel):
@@ -53,7 +53,7 @@ class Research(BaseModel):
     description: str
     machine_learning: MachineLearning
     target_quoted_instrument: QuotedInstrument
-    quoted_instruments: List[QuotedInstrument]
+    quoted_instruments: typing.List[QuotedInstrument]
 
 
 class Config(BaseModel):

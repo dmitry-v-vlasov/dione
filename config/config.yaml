@@ -3,6 +3,9 @@ config:
     name: Tesla Stock Price Time Series Prediction
     description: Based on the historical data of the Tesla stock prices and
       on other historical data of some quoted instruments (aka exogeneous variables).
+    eda:
+      automatic:
+        directory: data/generated/eda
     machine_learning:
       time_range:
         begin_time: 2021-01-01T00:00:00
@@ -26,12 +29,20 @@ config:
           file_name: ./data/target_quoted_instrument/TSLA/TSLA.csv
         date_column: Date
       data_transformation:
+        tending:
+          columns:
+            remove:
+              - Dividends
+              - Stock Splits
+            names:
+              to_snake_case: True
         clearing:
-          - fill_by_previous_timestamp
+          missing_values: interpolate_by_previous_date
         treatment:
-          - None
+          dimentionality: None
         scaling:
-          - standardization
+          scalers:
+            - standardization
     quoted_instruments:
       - ticker: ^NDX
         name: NASDAQ-100
@@ -50,12 +61,20 @@ config:
             file_name: ./data/quoted_instruments/^NDX/^NDX.csv
           date_column: Date
         data_transformation:
+          tending:
+            columns:
+              remove:
+                - Dividends
+                - Stock Splits
+              names:
+                to_snake_case: True
           clearing:
-            - fill_by_previous_timestamp
+            missing_values: interpolate_by_previous_date
           treatment:
-            - dimentionality_reduction_OHLC
+            dimentionality: dimentionality_reduction_OHLC
           scaling:
-            - standardization
+            scalers:
+              - standardization
       - ticker: REMX
         name: VanEck Rare Earth/Strategic Metals ETF
         description: VanEck Rare Earth/Strategic Metals ETF (REMX®) seeks to replicate as closely as possible,
@@ -74,9 +93,18 @@ config:
             file_name: ./data/quoted_instruments/REMX/REMX.csv
           date_column: Date
         data_transformation:
+          tending:
+            columns:
+              remove:
+                - Dividends
+                - Stock Splits
+                - Capital Gains
+              names:
+                to_snake_case: True
           clearing:
-            - fill_by_previous_timestamp
+            missing_values: interpolate_by_previous_date
           treatment:
-            - dimentionality_reduction_OHLC
+            dimentionality: dimentionality_reduction_OHLC
           scaling:
-            - standardization
+            scalers:
+              - standardization

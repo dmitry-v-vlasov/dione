@@ -162,6 +162,10 @@ class AbstractData(IData):
 class LocalData(AbstractData):
     source_path: str
 
+    @property
+    def loaded_data(self) -> pd.DataFrame:
+        return self.data.history_data()
+
 
 @dataclass
 class RemoteData(AbstractData):
