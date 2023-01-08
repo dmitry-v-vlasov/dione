@@ -15,14 +15,16 @@ config:
       description: Tesla, Inc. engages in the design, development, manufacture, and
         sale of fully electric vehicles and energy generation and storage systems.
       data_loading:
-        data_loading_stategy: keep_local_save_remote
+        data_loading_stategy: load_remote_to_local_and_remote_as_latest
         remote_data_loading:
           source_name: Yahoo! Finance
+          file_name: ./data/target_quoted_instrument/TSLA/TSLA.csv
           time_range:
             begin_time: 2018-01-01T00:00:00
             end_time: 2022-12-31T00:00:00
         local_data_loading:
-          file_name: None
+          file_name: ./data/target_quoted_instrument/TSLA/TSLA.csv
+        date_column: Date
       data_transformation:
         clearing:
           - fill_by_previous_timestamp
@@ -37,14 +39,16 @@ config:
           most innovative non-financial companies listed on the Nasdaq Stock Market based on
           market capitalization.
         data_loading:
-          data_loading_stategy: keep_old_local_save_remote_replace
+          data_loading_stategy: load_remote_to_local_and_remote_as_latest
           remote_data_loading:
             source_name: Yahoo! Finance
+            file_name: ./data/quoted_instruments/^NDX/^NDX.csv
             time_range:
               begin_time: 2018-01-01T00:00:00
               end_time: 2022-12-31T00:00:00
           local_data_loading:
-            file_name: None
+            file_name: ./data/quoted_instruments/^NDX/^NDX.csv
+          date_column: Date
         data_transformation:
           clearing:
             - fill_by_previous_timestamp
@@ -59,14 +63,16 @@ config:
           Metals Index (MVREMXTR), which is intended to track the overall performance of companies involved in
           producing, refining, and recycling of rare earth and strategic metals and minerals.
         data_loading:
-          data_loading_stategy: keep_old_local_save_remote_replace
+          data_loading_stategy: load_remote_to_local_and_remote_as_latest
           remote_data_loading:
             source_name: Yahoo! Finance
+            file_name: ./data/quoted_instruments/REMX/REMX.csv
             time_range:
               begin_time: 2018-01-01T00:00:00
               end_time: 2022-12-31T00:00:00
           local_data_loading:
-            file_name: None
+            file_name: ./data/quoted_instruments/REMX/REMX.csv
+          date_column: Date
         data_transformation:
           clearing:
             - fill_by_previous_timestamp

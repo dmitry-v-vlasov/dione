@@ -17,6 +17,7 @@ class LocalDataLoading(BaseModel):
 
 class RemoteDataLoading(BaseModel):
     source_name: str
+    file_name: str
     time_range: TimeRange
 
 
@@ -24,6 +25,7 @@ class DataLoading(BaseModel):
     data_loading_stategy: str
     remote_data_loading: RemoteDataLoading
     local_data_loading: LocalDataLoading
+    date_column: str
 
 
 class DataTransformation(BaseModel):

@@ -10,7 +10,7 @@ import config_model as model
 class ConfigLoader:
     """Load configuration"""
 
-    LOGGER = config_logging.get_logger("ConfigLoader")
+    LOGGER = config_logging.get_logger('ConfigLoader')
 
     def __init__(self, config_file_path: str) -> None:
         self.config_file_path = config_file_path
@@ -41,6 +41,3 @@ class ConfigLoader:
         config_loader.config_file_path = config_file_path
         return config_loader
 
-
-config_loader = ConfigLoader.from_path('./config/config.yaml')
-model_config = config_loader.load_config()

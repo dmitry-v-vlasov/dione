@@ -2,3 +2,7 @@
 dione
 logs/**
 __pycache__
+
+
+# Temporary files
+misc
