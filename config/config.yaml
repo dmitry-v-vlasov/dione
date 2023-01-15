@@ -8,8 +8,8 @@ config:
         directory: data/generated/eda
     machine_learning:
       time_range:
-        begin_time: 2021-01-01T00:00:00
-        end_time: 2022-12-31T00:00:00
+        begin_time: 2021-12-20T00:00:00
+        end_time: 2022-12-30T00:00:00
       split_time: 2022-12-20T00:00:00
       cross_validation_strategy: sliding_window
     target_quoted_instrument:
@@ -30,16 +30,21 @@ config:
         date_column: Date
       data_transformation:
         tending:
+          index:
+            reset:
+              - localize
           columns:
             remove:
               - Dividends
               - Stock Splits
+            change_rules:
+              Volume: float
             names:
               to_snake_case: True
         clearing:
           missing_values: interpolate_by_previous_date
         treatment:
-          dimentionality: None
+          dimensionality_reduction: None
         scaling:
           scalers:
             - standardization
@@ -62,16 +67,21 @@ config:
           date_column: Date
         data_transformation:
           tending:
+            index:
+              reset:
+                - localize
             columns:
               remove:
                 - Dividends
                 - Stock Splits
+              change_rules:
+                Volume: float
               names:
                 to_snake_case: True
           clearing:
             missing_values: interpolate_by_previous_date
           treatment:
-            dimentionality: dimentionality_reduction_OHLC
+            dimensionality_reduction: OHLC
           scaling:
             scalers:
               - standardization
@@ -94,17 +104,22 @@ config:
           date_column: Date
         data_transformation:
           tending:
+            index:
+              reset:
+                - localize
             columns:
               remove:
                 - Dividends
                 - Stock Splits
                 - Capital Gains
+              change_rules:
+                Volume: float
               names:
                 to_snake_case: True
           clearing:
             missing_values: interpolate_by_previous_date
           treatment:
-            dimentionality: dimentionality_reduction_OHLC
+            dimensionality_reduction: OHLC
           scaling:
             scalers:
               - standardization

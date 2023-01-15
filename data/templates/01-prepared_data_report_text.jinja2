@@ -1,0 +1,43 @@
+Report for prepared data.
+
+🔬 Research
+    name: {{research.name}}
+    description:
+        {{text_fill(research.description, indent=' '*8)}}
+
+🦾 Machine Learning
+    ⤇ begin time: {{machine_learning.time_range.begin_time}}
+    ⥥ split date: {{machine_learning.split_time}}
+    ⤆ end time: {{machine_learning.time_range.end_time}}
+    ▒▒░▒ cross-validation strategy: {{machine_learning.cross_validation_strategy}}
+
+📈 Target Quoted Instrument - [{{target_quoted_instrument.ticker}}]
+    ✅ ticker: {{target_quoted_instrument.ticker}}
+    ✅ name:   {{target_quoted_instrument.name}}
+    ✅ description:
+        {{text_fill(target_quoted_instrument.description, indent=' '*8)}}
+    ✅ Time range:
+        - begin time: {{ data[target_quoted_instrument.ticker].index.min() }}
+        - end time:   {{ data[target_quoted_instrument.ticker].index.max() }}
+    ✅ Data shape: {{data[target_quoted_instrument.ticker].shape}}
+    ✅ Number of missing values: {{ data[target_quoted_instrument.ticker].isna().sum().sum() }}
+    ✅ Statistics:
+{{data[target_quoted_instrument.ticker].describe().to_string()}}
+--------------------------------
+
+🗃️ Quoted Instruments
+    {% for instrument in quoted_instruments -%}
+    📈 Instrument - [{{instrument.ticker}}]
+        ✅ ticker: {{instrument.ticker}}
+        ✅ name:   {{instrument.name}}
+        ✅ description:
+            {{text_fill(instrument.description, indent=' '*12)}}
+        ✅ Time range:
+            - begin time: {{ data[instrument.ticker].index.min() }}
+            - end time:   {{ data[instrument.ticker].index.max() }}
+        ✅ Data shape: {{data[instrument.ticker].shape}}
+        ✅ Number of missing values: {{ data[instrument.ticker].isna().sum().sum() }}
+        ✅ Statistics:
+{{data[instrument.ticker].describe().to_string()}}
+--------------------------------
+    {% endfor %}
