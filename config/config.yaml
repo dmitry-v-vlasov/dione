@@ -8,9 +8,9 @@ config:
         directory: data/generated/eda
     machine_learning:
       time_range:
-        begin_time: 2021-12-20T00:00:00
+        begin_time: 2020-07-10T00:00:00
         end_time: 2022-12-30T00:00:00
-      split_time: 2022-12-20T00:00:00
+      split_time: 2022-12-10T00:00:00
       cross_validation_strategy: sliding_window
     target_quoted_instrument:
       ticker: TSLA

@@ -1,3 +1,6 @@
+from IPython.core.display import display
+from IPython.core.display import HTML
+
 from collections import OrderedDict
 
 import config_logging as clog
@@ -48,23 +51,23 @@ eda_post_treating_command = wfs.AutoEdaCommand(
 
 dataset_command = wfs.JoinedDatasetCommand(
     selected_data_context_name='selected-data',
-    dataset_context_name='raw-joined-dataset'
+    dataset_context_name='dataset',
+    save_datasets=True
 )
 
 
 commands = OrderedDict[str, wf.AbstractCommand]()
 commands['01-data_loading'] = data_load_command
 commands['02-data_tending'] = data_tending_command
-commands['03-eda_post_tending_command'] = eda_post_tending_command
+# commands['03-eda_post_tending_command'] = eda_post_tending_command
 commands['04-check_dates_command'] = check_dates_command
 commands['05-select_data_by_timerange_command'] = select_data_by_time_range_command
 commands['06-clear_data_command'] = clear_data_command
 commands['07-prepared_data_report_command'] = prepared_data_report_command
 commands['08-treat_data_command'] = treat_data_command
-commands['09-eda_post_treating_command'] = eda_post_treating_command
+# commands['09-eda_post_treating_command'] = eda_post_treating_command
 commands['11-dataset_command'] = dataset_command
 
 
 workflow = wf.Workflow(commands=commands)
 workflow.execute(workflow_context)
-

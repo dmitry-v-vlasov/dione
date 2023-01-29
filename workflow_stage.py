@@ -1,14 +1,19 @@
 import typing
-import warnings
+from typing import cast
 from typing import Any
+import warnings
 from collections import OrderedDict
-from pathlib import Path
 from datetime import datetime
 import numpy as np
 
+import shutil
+from pathlib import Path
+import fsutil
+
 import pandas as pd
 
-# import dataprep.eda as autoeda
+from holidays.utils import country_holidays, financial_holidays
+
 import sweetviz as eda_sv
 import pandas_profiling as eda_pp
 
@@ -518,7 +523,7 @@ class DataTreatingCommand(wf.AbstractCommand):
         self.LOGGER.info(f"[{instrument.ticker}][dimentionality_reduction][OHLC] columns: \
             {', '.join([column_open, column_high, column_low, column_close])}")
 
-        data['ohlc'] = 0.25 * (
+        data['OHLC'] = 0.25 * (
             data[column_open] + data[column_high] + data[column_low] + data[column_close]
         )
         data.drop(columns=[column_open, column_high, column_low, column_close], inplace=True)
@@ -534,7 +539,7 @@ class DataTreatingCommand(wf.AbstractCommand):
         self.LOGGER.info(f"[{instrument.ticker}][dimentionality_reduction][HLC] columns: \
             {', '.join([column_open, column_high, column_low, column_close])}")
 
-        data['hlc'] = 0.25 * (
+        data['HLC'] = 0.25 * (
             data[column_high] + data[column_low] + data[column_close]
         )
         data.drop(columns=[column_open, column_high, column_low, column_close], inplace=True)
@@ -545,16 +550,107 @@ class JoinedDatasetCommand(wf.AbstractCommand):
 
     LOGGER = clog.get_logger('DatasetCommand')
 
-    def __init__(self, selected_data_context_name: str, dataset_context_name: str):
+    def __init__(self, selected_data_context_name: str, dataset_context_name: str, save_datasets: bool = False):
         super().__init__()
         self.__selected_data_context_name = selected_data_context_name
         self.__dataset_context_name = dataset_context_name
+        self.__save_datasets = save_datasets
 
     def execute(self, context: dict):
         config: cfgm.Config = context['config']
         research = config.research
         selected_data: OrderedDict[str, pd.DataFrame] = context[self.__selected_data_context_name]
 
+
+        dataset_target = selected_data[research.target_quoted_instrument.ticker]
+        dataset_target.index.name = 'date'
+
+        dataset_target = self.__add_weekends_to(dataset_target)
+        dataset_target = self.__add_holidays_to(dataset_target, country_name='US')
+
+        joined_dataset = self.__joined_dataset(research, selected_data)
+        joined_dataset.index.name = 'date'
+
+        target_data_with_tech_analysis_features = self.__joined_financial_features(
+            selected_data[research.target_quoted_instrument.ticker],
+            ticker=research.target_quoted_instrument.ticker
+        )
+        target_data_with_tech_analysis_features.index.name = 'date'
+
+        joined_data_with_tech_analysis_features = self.__joined_financial_features(
+            joined_dataset,
+            ticker=research.target_quoted_instrument.ticker
+        )
+        joined_data_with_tech_analysis_features.index.name = 'date'
+
+        context[self.__dataset_context_name + '_target'] = dataset_target
+        context[self.__dataset_context_name + '_target_with_tech'] = target_data_with_tech_analysis_features
+        context[self.__dataset_context_name + '_joined'] = joined_dataset
+        context[self.__dataset_context_name + '_joined_with_tech'] = joined_data_with_tech_analysis_features
+
+        if self.__save_datasets:
+            self.__save_dataset(
+                self.__dataset_context_name + '_target',
+                context[self.__dataset_context_name + '_target']
+            )
+            self.__save_dataset(
+                self.__dataset_context_name + '_target_with_tech',
+                context[self.__dataset_context_name + '_target_with_tech']
+            )
+            self.__save_dataset(
+                self.__dataset_context_name + '_joined',
+                context[self.__dataset_context_name + '_joined']
+            )
+            self.__save_dataset(
+                self.__dataset_context_name + '_joined_with_tech',
+                context[self.__dataset_context_name + '_joined_with_tech']
+            )
+            
+
+        return wf.CommandState.SUCCESS
+    
+    
+    def __save_dataset(self, dataset_name: str, dataset: pd.DataFrame):
+        dataset_directory = 'data/generated/datasets'
+        if not fsutil.is_dir(dataset_directory):
+            fsutil.make_dirs(dataset_directory)
+
+        dataset.to_csv(
+            fsutil.join_filepath(dataset_directory, dataset_name + '.csv')
+        )
+
+    def __add_weekends_to(self, dataset: pd.DataFrame) -> pd.DataFrame:
+        datetime_index: pd.DatetimeIndex = cast(pd.DatetimeIndex, dataset.index)
+
+        dataset['weekend'] = pd.Series(
+            data=[1 if timestamp.weekday() >= 5 else 0 for timestamp in datetime_index],
+            index=datetime_index, dtype=int, name='weekend'
+        )
+
+        return dataset
+
+
+    def __add_holidays_to(self, dataset: pd.DataFrame, country_name: str | None = 'US', exchange_name: str | None = None) -> pd.DataFrame:
+        if country_name is None and exchange_name is None:
+            return dataset
+
+        datetime_index: pd.DatetimeIndex = cast(pd.DatetimeIndex, dataset.index)
+
+        if country_name is not None:
+            c_holidays = country_holidays(country_name)
+            dataset['holiday'] = pd.Series(
+                data=[1 if c_holidays.get(timestamp) else 0 for timestamp in datetime_index],
+                index=datetime_index, dtype=int, name='holiday'
+            )
+            
+
+        if exchange_name is not None:
+            raise NotImplementedError('Stock exchange holidays are not supported yet.')
+
+        return dataset
+    
+
+    def __joined_dataset(self, research, selected_data) -> pd.DataFrame:
         self.LOGGER.info(f"[DATASET] Joining columns from selected data: {self.__selected_data_context_name}")
 
         data_dictionary = selected_data
@@ -563,14 +659,96 @@ class JoinedDatasetCommand(wf.AbstractCommand):
             right_data = data_dictionary[quoted_instrument.ticker]
             right_suffix = '_' + quoted_instrument.ticker
             right_data = right_data.add_suffix(right_suffix)
-            self.LOGGER.info(f"[DATASET] [{quoted_instrument.ticker}] Right joining... right_suffix = '{right_suffix}'")
+            self.LOGGER.info(
+                f"[DATASET] [{quoted_instrument.ticker}] Right joining... right_suffix = '{right_suffix}'")
             joined_data = joined_data.join(
                 right_data,
                 how='outer'
             )
-            
+
         self.LOGGER.info(f"[DATASET] Joined columns column_types:\n{joined_data.info()}")
+        return joined_data
 
-        context[self.__dataset_context_name] = joined_data
+    def __joined_financial_features(self,
+                                  dataset: pd.DataFrame,
+                                  ticker: str = '',
+                                  columns_ohlc: dict = {
+                                      'open': 'open',
+                                      'high': 'high',
+                                      'low': 'low',
+                                      'close': 'close'
+                                  }):
+        """Feature Engineering including some features from tech analysis."""
+        # dataset = dataset.copy(deep=True)
 
-        return wf.CommandState.SUCCESS
+        features = pd.DataFrame()
+        features.index = dataset.index
+
+        open_c = columns_ohlc['open'] if columns_ohlc['open'] else 'open'
+        high = columns_ohlc['high'] if columns_ohlc['high'] else 'high'
+        low = columns_ohlc['low'] if columns_ohlc['low'] else 'low'
+        close = columns_ohlc['close'] if columns_ohlc['close'] else 'close'
+
+        # OHLC and HLC features
+        features['OHLC'] = (dataset[open_c] + dataset[high] + dataset[low] + dataset[close]) / 4
+        features['HLC'] = (dataset[high] + dataset[low] + dataset[close]) / 3
+        
+        # Close difference feature
+        features['close_diff'] = dataset[close].diff()
+
+        # Moving averages - different periods
+        features['MA200'] = dataset[close].rolling(window=200).mean()
+        features['MA100'] = dataset[close].rolling(window=100).mean()
+        features['MA50'] = dataset[close].rolling(window=50).mean()
+        features['MA26'] = dataset[close].rolling(window=26).mean()
+        features['MA20'] = dataset[close].rolling(window=20).mean()
+        features['MA12'] = dataset[close].rolling(window=12).mean()
+        features['MA4'] = dataset[close].rolling(window=4).mean()
+        features['MA3'] = dataset[close].rolling(window=3).mean()
+
+        # SMA Differences - different periods
+        features['DIFF-MA200-MA50'] = features['MA200'] - features['MA50']
+        features['DIFF-MA200-MA100'] = features['MA200'] - features['MA100']
+        features['DIFF-MA200-CLOSE'] = features['MA200'] - dataset[close]
+        features['DIFF-MA100-CLOSE'] = features['MA100'] - dataset[close]
+        features['DIFF-MA50-CLOSE'] = features['MA50'] - dataset[close]
+
+        # Moving Averages on high, lows, and std - different periods
+        features['MA200_low'] = dataset[low].rolling(window=200).min()
+        features['MA14_low'] = dataset[low].rolling(window=14).min()
+        features['MA200_high'] = dataset[high].rolling(window=200).max()
+        features['MA14_high'] = dataset[high].rolling(window=14).max()
+        features['MA20dSTD'] = dataset[close].rolling(window=20).std()
+
+        # Exponential Moving Averages (EMAS) - different periods
+        features['EMA12'] = dataset[close].ewm(span=12, adjust=False).mean()
+        features['EMA20'] = dataset[close].ewm(span=20, adjust=False).mean()
+        features['EMA26'] = dataset[close].ewm(span=26, adjust=False).mean()
+        features['EMA100'] = dataset[close].ewm(span=100, adjust=False).mean()
+        features['EMA200'] = dataset[close].ewm(span=200, adjust=False).mean()
+
+        # Shifts (one day before and two days before)
+        features['close_shift-1'] = dataset.shift(-1)[close]
+        features['close_shift-2'] = dataset.shift(-2)[close]
+
+        # Bollinger Bands
+        features['Bollinger_Upper'] = features['MA20'] + (features['MA20dSTD'] * 2)
+        features['Bollinger_Lower'] = features['MA20'] - (features['MA20dSTD'] * 2)
+
+        # Relative Strength Index (RSI)
+        features['K-ratio'] = 100*((dataset[close] - features['MA14_low']) / (features['MA14_high'] - features['MA14_low']) )
+        features['RSI'] = features['K-ratio'].rolling(window=3).mean()
+
+        # Moving Average Convergence/Divergence (MACD)
+        features['MACD'] = features['EMA12'] - features['EMA26']
+
+        # Replace NAs
+        nareplace = dataset.at[dataset.index.max(), close]
+        features.fillna((nareplace), inplace=True)
+
+        if ticker:
+            features = features.add_suffix('_' + ticker)
+
+        featured_dataset = pd.concat([dataset, features], axis=1)
+
+        return featured_dataset
